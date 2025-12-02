@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Distributed Web Scraper Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        input[type="text"],
+        input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .input-hint {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-start:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-stop {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-stop:hover:not(:disabled) {
+            background: #d32f2f;
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .stat-box {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #e0e0e0;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        .status-running {
+            background: #4caf50;
+        }
+
+        .status-stopped {
+            background: #f44336;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .config-display {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+
+        .config-display div {
+            margin-bottom: 5px;
+        }
+
+        .config-display strong {
+            color: #667eea;
+        }
+    </style>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>🖥️ Distributed Web Scraper Dashboard <span id="connectionStatus" style="font-size: 0.5em; color: #ddd;">●</span></h1>
+
+        <div id="alert" class="alert"></div>
+
+        <!-- Configuration Card -->
+        <div class="card">
+            <h2>⚙️ Configuration</h2>
+            <form id="configForm">
+                <div class="form-group">
+                    <label for="root_url">Root URL</label>
+                    <input type="text" id="root_url" name="root_url" 
+                           value="https://www.dlsu.edu.ph/" required>
+                    <div class="input-hint">Starting URL for the scraper</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="duration">Duration (minutes)</label>
+                    <input type="number" id="duration" name="duration" 
+                           value="1" min="1" max="1440" required>
+                    <div class="input-hint">How long to run (1-1440 minutes)</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="num_explorers">Number of Explorer Workers</label>
+                    <input type="number" id="num_explorers" name="num_explorers" 
+                           value="16" min="1" max="100" required>
+                    <div class="input-hint">Workers that fetch and discover URLs</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="num_extractors">Number of Extractor Workers</label>
+                    <input type="number" id="num_extractors" name="num_extractors" 
+                           value="1" min="1" max="100" required>
+                    <div class="input-hint">Workers that parse and extract titles</div>
+                </div>
+
+                <div class="button-group">
+                    <button type="submit" class="btn-start" id="startBtn">🚀 Start Scraper</button>
+                    <button type="button" class="btn-stop" id="stopBtn" disabled>⏹️ Stop Scraper</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Status Card -->
+        <div class="card">
+            <h2>📊 Real-Time Status</h2>
+            
+            <div style="text-align: center; margin-bottom: 20px;">
+                <span class="status-indicator status-stopped" id="statusIndicator"></span>
+                <span id="statusText" style="font-weight: 600; font-size: 18px;">Not Running</span>
+            </div>
+
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressBar" style="width: 0%;">0%</div>
+            </div>
+
+            <div class="status-grid">
+                <div class="stat-box">
+                    <div class="stat-label">⏱️ Elapsed</div>
+                    <div class="stat-value" id="elapsed">0s</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">⏳ Remaining</div>
+                    <div class="stat-value" id="remaining">0s</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">🔍 URLs Found</div>
+                    <div class="stat-value" id="urlsFound">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">📝 URLs Extracted</div>
+                    <div class="stat-value" id="urlsExtracted">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">🌐 Unique Visited</div>
+                    <div class="stat-value" id="visitedCount">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">⚡ Throughput</div>
+                    <div class="stat-value" id="throughput">0</div>
+                    <div style="font-size: 12px; color: #666; margin-top: 5px;">URLs/s</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">📥 Explore Queue</div>
+                    <div class="stat-value" id="exploreQueue">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">📤 Exploit Queue</div>
+                    <div class="stat-value" id="exploitQueue">0</div>
+                </div>
+            </div>
+
+            <div class="config-display" id="currentConfig" style="display: none;">
+                <strong>Current Configuration:</strong>
+                <div id="configContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('configForm');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const alert = document.getElementById('alert');
+        const connectionStatus = document.getElementById('connectionStatus');
+        
+        // Initialize WebSocket connection
+        const socket = io();
+        
+        // Connection events
+        socket.on('connect', () => {
+            console.log('✅ WebSocket connected');
+            connectionStatus.style.color = '#4caf50';
+            connectionStatus.textContent = '● Connected';
+        });
+        
+        socket.on('disconnect', () => {
+            console.log('❌ WebSocket disconnected');
+            connectionStatus.style.color = '#f44336';
+            connectionStatus.textContent = '● Disconnected';
+        });
+        
+        socket.on('connected', (data) => {
+            console.log('Server message:', data.message);
+        });
+        
+        // Status updates via WebSocket
+        socket.on('status_update', (data) => {
+            updateUI(data);
+        });
+        
+        // Scraper events
+        socket.on('scraper_started', (data) => {
+            console.log('🚀 Scraper started:', data);
+        });
+        
+        socket.on('scraper_stopped', (data) => {
+            console.log('🛑 Scraper stopped:', data);
+        });
+        
+        socket.on('scraper_completed', (data) => {
+            console.log('✅ Scraper completed:', data);
+            showAlert(`Scraping completed! Results saved to ${data.filename}`, 'success');
+        });
+        
+        socket.on('error', (data) => {
+            console.error('❌ Error:', data.message);
+            showAlert(data.message, 'error');
+        });
+
+        // Form submission
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = {
+                root_url: document.getElementById('root_url').value,
+                duration: parseInt(document.getElementById('duration').value),
+                num_explorers: parseInt(document.getElementById('num_explorers').value),
+                num_extractors: parseInt(document.getElementById('num_extractors').value)
+            };
+
+            try {
+                const response = await fetch('/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showAlert(data.message, 'success');
+                    startBtn.disabled = true;
+                    stopBtn.disabled = false;
+                    startStatusUpdates();
+                } else {
+                    showAlert(data.error || 'Failed to start scraper', 'error');
+                }
+            } catch (error) {
+                showAlert('Error: ' + error.message, 'error');
+            }
+        });
+
+        // Stop button
+        stopBtn.addEventListener('click', async () => {
+            try {
+                const response = await fetch('/stop', { method: 'POST' });
+                const data = await response.json();
+
+                if (response.ok) {
+                    showAlert(data.message, 'success');
+                    stopBtn.disabled = true;
+                } else {
+                    showAlert(data.error || 'Failed to stop scraper', 'error');
+                }
+            } catch (error) {
+                showAlert('Error: ' + error.message, 'error');
+            }
+        });
+
+        // Show alert
+        function showAlert(message, type) {
+            alert.textContent = message;
+            alert.className = `alert alert-${type}`;
+            alert.style.display = 'block';
+            setTimeout(() => { alert.style.display = 'none'; }, 5000);
+        }
+
+        // Start status updates (via WebSocket, no polling needed)
+        function startStatusUpdates() {
+            // WebSocket already broadcasting status updates
+            console.log('📡 Receiving real-time updates via WebSocket');
+        }
+
+        // Update UI
+        function updateUI(data) {
+            const statusIndicator = document.getElementById('statusIndicator');
+            const statusText = document.getElementById('statusText');
+
+            if (data.running) {
+                statusIndicator.className = 'status-indicator status-running';
+                statusText.textContent = 'Running';
+                stopBtn.disabled = false;
+                startBtn.disabled = true;
+            } else {
+                statusIndicator.className = 'status-indicator status-stopped';
+                statusText.textContent = 'Stopped';
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+            }
+
+            // Update progress bar
+            const progress = Math.min(100, data.progress || 0);
+            document.getElementById('progressBar').style.width = progress + '%';
+            document.getElementById('progressBar').textContent = progress.toFixed(1) + '%';
+
+            // Update stats
+            document.getElementById('elapsed').textContent = data.elapsed + 's';
+            document.getElementById('remaining').textContent = data.remaining + 's';
+            document.getElementById('urlsFound').textContent = data.urls_found || 0;
+            document.getElementById('urlsExtracted').textContent = data.urls_extracted || 0;
+            document.getElementById('visitedCount').textContent = data.visited_count || 0;
+            document.getElementById('throughput').textContent = data.throughput || 0;
+            document.getElementById('exploreQueue').textContent = data.explored_queue_len || 0;
+            document.getElementById('exploitQueue').textContent = data.exploit_queue_len || 0;
+
+            // Show config
+            if (data.config && Object.keys(data.config).length > 0) {
+                const configDiv = document.getElementById('currentConfig');
+                const configContent = document.getElementById('configContent');
+                configDiv.style.display = 'block';
+                configContent.innerHTML = `
+                    <div>URL: ${data.config.root_url}</div>
+                    <div>Duration: ${data.config.duration} minutes</div>
+                    <div>Explorers: ${data.config.num_explorers} | Extractors: ${data.config.num_extractors}</div>
+                `;
+            }
+        }
+
+        // Request initial status on load
+        socket.emit('request_status');
+    </script>
+</body>
+</html>
