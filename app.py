@@ -245,4 +245,25 @@ def start_scraper():
             }
         })
 
+@app.route('/stop', methods=['POST'])
+def stop_scraper():
+    """Stop the distributed scraper"""
+    global scraper_running
+    
+    try:
+        r.set('stop_signal', '1')
+        scraper_running = False
+        
+        # Publish stop command to worker nodes via Pub/Sub
+        r.publish('scraper_control', json.dumps({'command': 'stop'}))
+        
+        # Emit via WebSocket
+        socketio.emit('scraper_stopped', {'message': 'Stop signal sent'})
+        
+        return jsonify({'success': True, 'message': 'Stop signal sent'})
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 socketio.run(app, host='0.0.0.0', port=5000, debug=True)

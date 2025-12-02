@@ -1,3 +1,4 @@
 **/*.json
 **/*.csv
-**/*.txt
+out/*.txt
+VM_IPs

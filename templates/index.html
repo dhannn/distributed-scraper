@@ -422,6 +422,7 @@
                 if (response.ok) {
                     showAlert(data.message, 'success');
                     stopBtn.disabled = true;
+                    startBtn.disabled = false;
                 } else {
                     showAlert(data.error || 'Failed to stop scraper', 'error');
                 }
