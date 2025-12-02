@@ -266,4 +266,4 @@ def stop_scraper():
         return jsonify({'error': str(e)}), 500
 
 
-socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+socketio.run(app, host='0.0.0.0', port=80, debug=True)
