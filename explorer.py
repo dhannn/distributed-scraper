@@ -90,7 +90,8 @@ def main():
                         p.terminate()
                         p.join(timeout=2)
                 active_processes.clear()
-                
+        
+        time.sleep(0.1)  # Check for messages every 100ms
 
 def explorer_worker():
     worker_id = os.getpid()

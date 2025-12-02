@@ -143,9 +143,7 @@ def monitor_scraper():
                 print("⏰ Time's up! Sending stop signal...")
                 r.set('stop_signal', '1')
                 scraper_running = False
-                
-                # Wait a bit for workers to finish processing
-                
+                                
                 # Collect and save results
                 results_data = collect_results()
                 
@@ -221,7 +219,7 @@ def start_scraper():
     r.publish('scraper_control', json.dumps({'command': 'start'}))
     
     explorer_ack = r.brpop('explorer_ack', timeout=10)  # Wait up to 10s
-    # extractor_ack = r.brpop('extractor_ack', timeout=10)
+    extractor_ack = r.brpop('extractor_ack', timeout=10)
     
     r.set('start_time', time.time())
     initial_item = json.dumps({'url': root_url, 'html': None})
@@ -266,4 +264,4 @@ def stop_scraper():
         return jsonify({'error': str(e)}), 500
 
 
-socketio.run(app, host='0.0.0.0', port=80, debug=True)
+socketio.run(app, host='0.0.0.0', port=8080, debug=True)

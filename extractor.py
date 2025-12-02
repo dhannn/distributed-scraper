@@ -175,4 +175,5 @@ if __name__ == '__main__':
                         p.terminate()
                         p.join(timeout=2)
                 active_processes.clear()
-
+        
+        time.sleep(0.1)  # Check for messages every 100ms
